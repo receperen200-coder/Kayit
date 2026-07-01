@@ -2,28 +2,52 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Sayaç Sistemi</title>
+<title>Stats System</title>
+
+<style>
+body{
+  background:#111;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  padding-top:40px;
+}
+
+.box{
+  background:#222;
+  padding:20px;
+  width:300px;
+  margin:10px auto;
+  border-radius:10px;
+}
+
+h2{
+  color:#00ffcc;
+}
+</style>
 </head>
 
-<body style="background:#111;color:white;text-align:center;font-family:Arial">
+<body>
 
-<h2>🔥 Sayaç Sistemi</h2>
+<h2>📊 Firebase Stats System</h2>
 
+<div class="box">
 <h3 id="openCount">Açılma: 0</h3>
 <h3 id="deviceCount">Cihaz: 0</h3>
+</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* 🔥 SENİN FIREBASE */
+/* FIREBASE */
 const firebaseConfig = {
   apiKey: "AIzaSyBYPFtYnDPkvgbDAYp5pkK92oRljW3I",
   authDomain: "kayitsistemi-dbe5f.firebaseapp.com",
   databaseURL: "https://kayitsistemi-dbe5f-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kayitsistemi-dbe5f",
-  storageBucket: "kayitsistemi-dbe5f.firebasestorage.app",
+  storageBucket: "kayitsistemi-dbe5f.appspot.com",
   messagingSenderId: "416813344508",
   appId: "1:416813344508:web:18acea1dee3d6781301979"
 };
@@ -31,35 +55,39 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* 📱 CİHAZ ID */
+/* DEVICE ID */
 const deviceId = localStorage.getItem("deviceId") || crypto.randomUUID();
 localStorage.setItem("deviceId", deviceId);
 
-/* ===================== AÇILMA SAYACI ===================== */
-async function updateOpenCount() {
-  const snap = await get(ref(db, "openCount"));
-  let count = snap.val() || 0;
-  count++;
-  await set(ref(db, "openCount"), count);
+/* ===================== OPEN COUNT ===================== */
+const openRef = ref(db, "stats/openCount");
 
-  document.getElementById("openCount").innerText = "Açılma: " + count;
-}
+get(openRef).then((snap) => {
+  let value = snap.val();
+  if(value === null || value === undefined) value = 0;
 
-/* ===================== CİHAZ SAYACI ===================== */
-async function updateDeviceCount() {
-  await set(ref(db, "devices/" + deviceId), true);
+  value = Number(value) + 1;
 
-  const snap = await get(ref(db, "devices"));
+  set(openRef, value);
+
+  document.getElementById("openCount").innerText =
+    "Açılma: " + value;
+});
+
+/* ===================== DEVICE COUNT ===================== */
+const deviceRef = ref(db, "stats/devices/" + deviceId);
+
+set(deviceRef, true);
+
+get(ref(db, "stats/devices")).then((snap) => {
+
   const data = snap.val() || {};
-
   const count = Object.keys(data).length;
 
-  document.getElementById("deviceCount").innerText = "Cihaz: " + count;
-}
+  document.getElementById("deviceCount").innerText =
+    "Cihaz: " + count;
 
-/* 🚀 ÇALIŞTIR */
-updateOpenCount();
-updateDeviceCount();
+});
 
 </script>
 
