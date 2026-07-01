@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kayıt Sistemi</title>
+
+<style>
+body { font-family: Arial; background:#111; color:white; text-align:center; }
+.box { background:#222; padding:20px; width:340px; margin:10px auto; border-radius:10px; }
+input, button { padding:10px; margin:5px; width:90%; }
+button { cursor:pointer; }
+
+.msgBox{
+ width:340px;
+ margin:5px auto;
+ padding:8px;
+ color:yellow;
+ background:#333;
+ border-radius:8px;
+ font-weight:bold;
+ min-height:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔥 Kayıt + Admin Sistemi</h2>
+
+<h3 id="counter">Açılma sayısı: 0</h3>
+<h3 id="deviceCounter">Cihaz sayısı: 0</h3>
+
+<!-- REGISTER -->
+<div class="box">
+<h3>Kayıt Ol</h3>
+
+<input id="regUser" placeholder="Kullanıcı adı">
+<input id="regSurname" placeholder="Soyisim">
+<input id="regPass" type="password" placeholder="Şifre">
+<input id="regAge" placeholder="Yaş">
+
+<label>
+<input type="checkbox" id="premiumSwitch"> Premium
+</label>
+
+<button id="registerBtn">Kayıt Ol</button>
+</div>
+
+<div id="registerMsg" class="msgBox"></div>
+
+<!-- LOGIN -->
+<div class="box">
+<h3>Giriş Yap</h3>
+
+<input id="logUser" placeholder="Kullanıcı adı">
+<input id="logPass" type="password" placeholder="Şifre">
+
+<button id="loginBtn">Giriş</button>
+</div>
+
+<div id="loginMsg" class="msgBox"></div>
+
+<!-- ADMIN -->
+<div class="box">
+<h3>Admin Panel</h3>
+
+<input id="adminUser" placeholder="Admin">
+<input id="adminPass" type="password" placeholder="Şifre">
+
+<button id="adminLoginBtn">Admin Giriş</button>
+<button id="loadBtn">İstekleri Yükle</button>
+<button id="loadUsersBtn">Kullanıcılar</button>
+<button id="resetStatsBtn">Sayaç Sıfırla</button>
+
+<div id="adminMsg" class="msgBox"></div>
+
+<div id="requests"></div>
+<div id="users"></div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* FIREBASE */
+const firebaseConfig = {
+ apiKey: "AIzaSyBYPFtYnDPkvgbDAYp5pk9GlK92oRljW3I",
+ authDomain: "kayitsistemi-dbe5f.firebaseapp.com",
+ databaseURL: "https://kayitsistemi-dbe5f-default-rtdb.europe-west1.firebasedatabase.app",
+ projectId: "kayitsistemi-dbe5f",
+ storageBucket: "kayitsistemi-dbe5f.appspot.com",
+ messagingSenderId: "416813344508",
+ appId: "1:416813344508:web:18acea1dee3d6781301979"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* ADMIN */
+let isAdmin = false;
+
+/* MSG */
+const regMsgBox = document.getElementById("registerMsg");
+const loginMsgBox = document.getElementById("loginMsg");
+const adminMsgBox = document.getElementById("adminMsg");
+
+function regMsg(t){ regMsgBox.innerText = t; }
+function loginMsg(t){ loginMsgBox.innerText = t; }
+function adminMsg(t){ adminMsgBox.innerText = t; }
+
+/* ================= REGISTER ================= */
+document.getElementById("registerBtn").onclick = async () => {
+
+ const u = regUser.value.trim();
+ const s = regSurname.value.trim();
+ const p = regPass.value.trim();
+ const age = regAge.value.trim();
+
+ if(!u || !s || !p || !age)
+  return regMsg("Tüm alanları doldur!");
+
+ if(isNaN(age))
+  return regMsg("Yaş sayı olmalı!");
+
+ const snap1 = await get(ref(db,"Users/"+u));
+ const snap2 = await get(ref(db,"Requests/"+u));
+
+ if(snap1.exists() || snap2.exists())
+  return regMsg("Kullanıcı adı alınmış!");
+
+ await set(ref(db,"Requests/"+u),{
+  surname:s,
+  password:p,
+  age:Number(age),
+  premium: premiumSwitch.checked
+});
+
+ regMsg("Kayıt gönderildi");
+};
+
+/* ================= LOGIN ================= */
+document.getElementById("loginBtn").onclick = async () => {
+
+ const u = logUser.value.trim();
+ const p = logPass.value.trim();
+
+ const snap = await get(ref(db,"Users/"+u));
+
+ if(!snap.exists())
+  return loginMsg("Onaylanmamış kullanıcı");
+
+ const d = snap.val();
+
+ if(d.password === p){
+
+  localStorage.setItem("user",u);
+
+  if(d.premium){
+   location.href = "loyun123.html";
+  }else{
+   location.href = "loyun.html";
+  }
+
+ } else loginMsg("Şifre yanlış");
+};
+
+/* ================= ADMIN ================= */
+document.getElementById("adminLoginBtn").onclick = () => {
+
+ if(adminUser.value==="francisco" && adminPass.value==="trincao"){
+  isAdmin = true;
+  adminMsg("Admin giriş OK");
+ } else adminMsg("Hatalı admin");
+};
+
+/* ================= REQUESTS ================= */
+document.getElementById("loadBtn").onclick = async () => {
+
+ if(!isAdmin) return adminMsg("Admin değil");
+
+ const snap = await get(ref(db,"Requests"));
+ const data = snap.val();
+
+ let html = "";
+
+ for(let u in data){
+  html += `
+  <p>
+  👤 ${u}<br>
+  👂 ${data[u].surname}<br>
+  🎂 ${data[u].age}<br>
+  ⭐ ${data[u].premium}<br>
+
+  <button onclick="approve('${u}')">✔</button>
+  <button onclick="reject('${u}')">❌</button>
+  </p>`;
+ }
+
+ requests.innerHTML = html;
+};
+
+window.approve = async (u)=>{
+
+ const snap = await get(ref(db,"Requests/"+u));
+ const d = snap.val();
+
+ await set(ref(db,"Users/"+u), d);
+ await remove(ref(db,"Requests/"+u));
+
+ adminMsg("Onaylandı");
+};
+
+window.reject = async (u)=>{
+
+ await remove(ref(db,"Requests/"+u));
+ adminMsg("Silindi");
+};
+
+/* ================= USERS ================= */
+document.getElementById("loadUsersBtn").onclick = async () => {
+
+ if(!isAdmin) return adminMsg("Admin değil");
+
+ const snap = await get(ref(db,"Users"));
+ const data = snap.val();
+
+ let html = "";
+
+ for(let u in data){
+  html += `
+  <p>
+  👤 ${u}<br>
+  👂 ${data[u].surname}<br>
+  🎂 ${data[u].age}<br>
+  ⭐ ${data[u].premium}<br>
+
+  <button onclick="deleteUser('${u}')">🗑</button>
+  </p>`;
+ }
+
+ users.innerHTML = html;
+};
+
+window.deleteUser = async (u)=>{
+ await remove(ref(db,"Users/"+u));
+ adminMsg("Silindi");
+};
+
+/* ================= COUNTERS ================= */
+const deviceId = localStorage.getItem("deviceId") || crypto.randomUUID();
+localStorage.setItem("deviceId",deviceId);
+
+set(ref(db,"devices/"+deviceId),true);
+
+get(ref(db,"devices")).then(s=>{
+ const d = s.val() || {};
+ deviceCounter.innerText = "Cihaz sayısı: "+Object.keys(d).length;
+});
+
+const counterRef = ref(db,"openCount");
+
+get(counterRef).then(s=>{
+ let v = s.val() || 0;
+ v++;
+ set(counterRef,v);
+ counter.innerText = "Açılma sayısı: "+v;
+});
+
+/* ================= RESET ================= */
+document.getElementById("resetStatsBtn").onclick = async ()=>{
+
+ if(!isAdmin) return adminMsg("Admin değil");
+
+ await set(ref(db,"openCount"),0);
+ await remove(ref(db,"devices"));
+
+ adminMsg("Sayaç sıfırlandı");
+};
+
+</script>
+
+</body>
+</html> 
