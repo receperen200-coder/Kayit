@@ -2,24 +2,24 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Sayaç</title>
+<title>Sayaç Sistemi</title>
 </head>
 
-<body style="background:#111;color:white;text-align:center;font-family:Arial;">
+<body style="background:#111;color:white;text-align:center;font-family:Arial">
 
-<h2>Açılma Sayısı</h2>
-<h1 id="open">0</h1>
+<h2>🔥 Sayaç Sistemi</h2>
 
-<h2>Cihaz Sayısı</h2>
-<h1 id="device">0</h1>
+<h3 id="openCount">Açılma: 0</h3>
+<h3 id="deviceCount">Cihaz: 0</h3>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+/* 🔥 SENİN FIREBASE */
 const firebaseConfig = {
-  apiKey: "AIzaSyBYPFtYnDPkvgbDAYp5pk9GlK92oRljW3I",
+  apiKey: "AIzaSyBYPFtYnDPkvgbDAYp5pkK92oRljW3I",
   authDomain: "kayitsistemi-dbe5f.firebaseapp.com",
   databaseURL: "https://kayitsistemi-dbe5f-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kayitsistemi-dbe5f",
@@ -31,33 +31,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// cihaz id (tarayıcı bazlı)
-let deviceId = localStorage.getItem("deviceId");
-if(!deviceId){
-  deviceId = crypto.randomUUID();
-  localStorage.setItem("deviceId", deviceId);
+/* 📱 CİHAZ ID */
+const deviceId = localStorage.getItem("deviceId") || crypto.randomUUID();
+localStorage.setItem("deviceId", deviceId);
+
+/* ===================== AÇILMA SAYACI ===================== */
+async function updateOpenCount() {
+  const snap = await get(ref(db, "openCount"));
+  let count = snap.val() || 0;
+  count++;
+  await set(ref(db, "openCount"), count);
+
+  document.getElementById("openCount").innerText = "Açılma: " + count;
 }
 
-// 🔥 OPEN COUNT +1
-const openRef = ref(db, "stats/openCount");
+/* ===================== CİHAZ SAYACI ===================== */
+async function updateDeviceCount() {
+  await set(ref(db, "devices/" + deviceId), true);
 
-const openSnap = await get(openRef);
-let openVal = openSnap.val() || 0;
-openVal++;
-await set(openRef, openVal);
+  const snap = await get(ref(db, "devices"));
+  const data = snap.val() || {};
 
-document.getElementById("open").innerText = openVal;
+  const count = Object.keys(data).length;
 
-// 🔥 DEVICE COUNT (unique)
-const deviceRef = ref(db, "stats/devices/" + deviceId);
+  document.getElementById("deviceCount").innerText = "Cihaz: " + count;
+}
 
-await set(deviceRef, true);
-
-const allDevices = await get(ref(db, "stats/devices"));
-const deviceData = allDevices.val() || {};
-
-document.getElementById("device").innerText =
-Object.keys(deviceData).length;
+/* 🚀 ÇALIŞTIR */
+updateOpenCount();
+updateDeviceCount();
 
 </script>
 
