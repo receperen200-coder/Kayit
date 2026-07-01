@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sayaç</title>
+</head>
+
+<body style="background:#111;color:white;text-align:center;font-family:Arial;">
+
+<h2>Açılma Sayısı</h2>
+<h1 id="open">0</h1>
+
+<h2>Cihaz Sayısı</h2>
+<h1 id="device">0</h1>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFtYnDPkvgbDAYp5pk9GlK92oRljW3I",
+  authDomain: "kayitsistemi-dbe5f.firebaseapp.com",
+  databaseURL: "https://kayitsistemi-dbe5f-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kayitsistemi-dbe5f",
+  storageBucket: "kayitsistemi-dbe5f.firebasestorage.app",
+  messagingSenderId: "416813344508",
+  appId: "1:416813344508:web:18acea1dee3d6781301979"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// cihaz id (tarayıcı bazlı)
+let deviceId = localStorage.getItem("deviceId");
+if(!deviceId){
+  deviceId = crypto.randomUUID();
+  localStorage.setItem("deviceId", deviceId);
+}
+
+// 🔥 OPEN COUNT +1
+const openRef = ref(db, "stats/openCount");
+
+const openSnap = await get(openRef);
+let openVal = openSnap.val() || 0;
+openVal++;
+await set(openRef, openVal);
+
+document.getElementById("open").innerText = openVal;
+
+// 🔥 DEVICE COUNT (unique)
+const deviceRef = ref(db, "stats/devices/" + deviceId);
+
+await set(deviceRef, true);
+
+const allDevices = await get(ref(db, "stats/devices"));
+const deviceData = allDevices.val() || {};
+
+document.getElementById("device").innerText =
+Object.keys(deviceData).length;
+
+</script>
+
+</body>
+</html>
